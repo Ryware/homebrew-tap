@@ -1,0 +1,39 @@
+name: Update Headroom cask
+
+# Checks Headroom's latest GitHub release and updates Casks/headroom.rb.
+# Uses this repository's own token, so no secrets are needed.
+
+on:
+  schedule:
+    - cron: "23 */3 * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [headroom-release]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render the cask from the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          TAG=$(gh release view --repo Ryware/Headroom --json tagName -q .tagName)
+          VERSION="${TAG#v}"
+          SHA=$(curl -fsSL "https://github.com/Ryware/Headroom/releases/download/$TAG/Headroom-$VERSION.dmg.sha256" | cut -d' ' -f1)
+          [ ${#SHA} -eq 64 ] || { echo "::error::No checksum for $TAG"; exit 1; }
+          curl -fsSL "https://raw.githubusercontent.com/Ryware/Headroom/$TAG/packaging/homebrew/headroom.rb" -o template.rb \
+            || curl -fsSL "https://raw.githubusercontent.com/Ryware/Headroom/main/packaging/homebrew/headroom.rb" -o template.rb
+          sed -e '1,2d' -e "s/@VERSION@/$VERSION/" -e "s/@SHA256@/$SHA/" template.rb > Casks/headroom.rb
+          rm template.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/headroom.rb
+          git diff --cached --quiet && { echo "Already at $VERSION"; exit 0; }
+          git commit -m "headroom $VERSION"
+          git push
