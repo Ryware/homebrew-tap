@@ -1,6 +1,6 @@
 cask "headroom" do
-  version "1.0.5"
-  sha256 "68533f9946bd331b3ef8fd921805a5b3ab12c8b2442e8636405449092fa25b45"
+  version "1.1.0"
+  sha256 "cd29c83e04fa35120c60347b5e4509ad6f718ab408791e5eb2dd9d9df1b9be94"
 
   url "https://github.com/Ryware/Headroom/releases/download/v#{version}/Headroom-#{version}.dmg"
   name "Headroom"
